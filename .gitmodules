@@ -1,0 +1,3 @@
+[submodule " lib/quaphy"]
+	path = lib/quaphy
+	url = https://github.com/qduff/quaphy.git
