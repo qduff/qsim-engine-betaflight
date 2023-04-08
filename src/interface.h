@@ -1,16 +1,17 @@
+#pragma once
+
 #include <array>
-#include <boost/interprocess/managed_shared_memory.hpp>
 #include <cstdint>
 #include <glm/glm.hpp>
 #include <glm/vec3.hpp>  // glm::vec3
 
-#include "packets.hpp"
-using namespace boost::interprocess;
+
 typedef std::array<int16_t, 4> motor_pwms_t;
 
 class Interface {
    private:
    public:
+     // tidy this nonsense. 
     static Interface& getInstance();
     bool init();
     void setOsdLocation(uint8_t* pnt);
@@ -38,6 +39,6 @@ class Interface {
 
     unsigned long long int simsteps = 0u;
 
-    uint64_t micros_passed = 0;  // fake
+    uint64_t micros_passed = 0;  // fakeish but will suffice
     const char* getVersion();
 };

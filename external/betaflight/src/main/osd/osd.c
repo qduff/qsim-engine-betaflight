@@ -170,7 +170,7 @@ void changeOsdProfileIndex(uint8_t profileIndex) {
 #endif
 
 static void osdDrawElements(timeUs_t currentTimeUs) {
-    puts("drawelems");
+    // puts("drawelems");
     displayClearScreen(osdDisplayPort);
 
     // Hide OSD when OSDSW mode is active

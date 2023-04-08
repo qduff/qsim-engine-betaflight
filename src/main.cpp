@@ -12,20 +12,35 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <boost/asio.hpp>
-#include <boost/interprocess/creation_tags.hpp>
+// most of these are probably useless
+
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
 #include <ostream>
 #include <thread>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdio.h>
+
+
+#include <sys/mman.h>
+
 
 #include "interface.h"
+#include "memdef.h"
 #include "iostream"
-#include "packets.hpp"
 #include "quaphy.h"
 
-using hr_clock = std::chrono::high_resolution_clock;
+#define USLEEP_DURATION 50
+
+
+template <typename R, typename P>
+auto to_ns(std::chrono::duration<R, P> t) {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(t).count();
+}
 
 template <typename R, typename P>
 auto to_us(std::chrono::duration<R, P> t) {
@@ -37,67 +52,82 @@ auto to_ms(std::chrono::duration<R, P> t) {
     return std::chrono::duration_cast<std::chrono::milliseconds>(t).count();
 }
 
-typedef std::array<int16_t, 4> motor_pwms_t;
+memory_s *shmem; // moveme
 
-int main() {
-    managed_shared_memory shm{open_only, "shrdx"};
+int main(int argc, char **argv) {
+
+    if (argc==1){
+        puts("This process cannot be run standalone!");
+        return -1;
+
+    } else {
+        int fd = shm_open(argv[1], O_RDWR, S_IRUSR | S_IWUSR);
+        if (fd == -1)
+        {
+            perror("shm_open_err!");
+            fprintf(stderr,"Cannot open %s\n", argv[1]);
+            return EXIT_FAILURE;
+        }
+        shmem = (memory_s*)mmap(NULL, sizeof(memory_s), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+        if (shmem == MAP_FAILED)
+        {
+            perror("ps_map_err!");
+            return EXIT_FAILURE;
+        }
+    }
+    shmem->childVersion[0] = 0;
+    shmem->childVersion[1] = 0;
+    shmem->childVersion[2] = 3;
+
 
     Interface& interface = Interface::getInstance();
-    Quaphy quaphy = Quaphy();
+    Quaphy quaphy = Quaphy(); // unused rn
 
     if (!interface.init()) {
         puts("[KERNEL] Failed to initialize interface!");
         return EXIT_FAILURE;
     }
-    // uint8_t(*osdScreen)[VIDEO_LINES][CHARS_PER_LINE];
-    // osdScreen =
-    //   shm.find<uint8_t[VIDEO_LINES][CHARS_PER_LINE]>("osdArray").first;
-
-    unsigned char(*osdpnt) = shm.find<uint8_t>("osdpnt").first;
-    float(*rcpnt) = shm.find<float>("rcpnt").first;
-
-    printf("%p\n", osdpnt);
-    interface.setOsdLocation(osdpnt);
+  
+    interface.setOsdLocation(shmem->osd);
 
     puts("[KERNEL] Successfully initialized interface!");
     std::cout << "[KERNEL] quaphy ver: " << quaphy.ver << std::endl;
     std::cout << "[KERNEL] bf ver: " << interface.getVersion() << std::endl;
 
     bool run = true;
-    auto start = std::chrono::system_clock::now();
+    auto starttime = std::chrono::system_clock::now();
+    auto curtime = std::chrono::system_clock::now();
 
-    // unsigned long long int loops;
     while (run) {
-        // interface.updateDyad();
+        #ifdef dyad
+        interface.updateDyad();
+        #endif
         interface.run_sched();
+        #define fakestate
+        #ifdef fakestate
         interface.updateStateFromParams(
           glm::quat{0, 0, 0, 0}, glm::vec3{0, 0, 0}, glm::vec3{0, 0, 0});
-        // interface.set_rc_data(std::array<float, 8>{
-        //   0., 1., 0, -1, 0, 0, 0, 0});  // roll pirch throttle yaw FOR MENU
-        // interface.set_rc_data(std::array<float, 8>{
-        //   0., 0., -1, 0., 0, 0, 0, 0});  // roll pirch throttle yaw
-        // interface.set_rc_data(
-        //   std::array<float, 8>{0., 0., 1, 0., 0, 0, 0, 0});  // throttle UP
+        #endif
+        #ifdef debugmenu
+        interface.set_rc_data(std::array<float, 8>{
+          0., 1., 0, -1, 0, 0, 0, 0});  // roll pirch throttle yaw FOR MENU
+        #endif
 
         interface.micros_passed =
-          to_us(std::chrono::system_clock::now() - start);  // stupid!
-                                                            // ++loops;
-        // if (loops == 10000) {
-        //     return 0;
-        //     puts("1mil done");
-        // }
+          to_us(std::chrono::system_clock::now() - starttime);  
+
+        shmem->micros_passed=interface.micros_passed;
+        shmem->nanos_cycle=to_ns(std::chrono::system_clock::now() - curtime);
+        curtime = std::chrono::system_clock::now();
+
         // interface.debugArmFlags(loops);
-        // printf("%i\n", loops);
-        interface.set_rc_data_from_pointer(rcpnt);
 
-        for (int i = 0; i < 8; ++i) {
+        // for (int i = 0; i < 8; ++i) {
             // printf("axis %i :  %f\n", i, *(rcpnt + i));
-        }
+        // }
+
+        usleep(USLEEP_DURATION); // do not eat cpu! potentially target rate instead since this thing can go FAST!
     }
-
-    std::cout << ("[KERNEL] NO TASKS, QUITTING\n");
-
-    std::cout << ("[KERNEL] Stopped host process\n");
-
+    puts("Process quit (hmmmmmm)");
     return 0;
 }

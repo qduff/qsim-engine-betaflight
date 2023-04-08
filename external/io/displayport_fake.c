@@ -40,6 +40,7 @@ static int clearScreen(displayPort_t *displayPort) {
 static int drawScreen(displayPort_t *displayPort) {
     UNUSED(displayPort);
     memcpy(osdPntr, osdBackBuffer, CHARS_PER_LINE * VIDEO_LINES);
+
     return 0;
 }
 
@@ -53,7 +54,7 @@ static int writeString(displayPort_t *displayPort,
                        uint8_t y,
                        const char *s) {
     UNUSED(displayPort);
-    printf("OSDWRITE@y%dx%d:'%s'\n", y, x, s);
+    // printf("OSDWRITE@y%dx%d:'%s'\n", y, x, s);
     if (y < VIDEO_LINES) {
         for (int i = 0; s[i] && x + i < CHARS_PER_LINE; i++) {
             osdBackBuffer[y][x + i] = s[i];

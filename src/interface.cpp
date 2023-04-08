@@ -13,7 +13,6 @@
 #include <thread>
 #include <vector>
 
-#include "packets.hpp"
 
 extern "C" {
 #include "dyad.h"
@@ -44,7 +43,7 @@ void EnableState(stateFlags_t mask) {
     stateFlags |= mask;
 }
 }
-}  // namespace bf
+}
 
 #define USE_QUAT_ORIENTATION
 
@@ -72,6 +71,8 @@ void Interface::setOsdLocation(uint8_t* pnt) {
 }
 
 void Interface::set_rc_data_from_pointer(float* pnt) {
+    printf("rcpnt %p\n", pnt);
+
     uint16_t rcData[8];
     for (int i = 0; i < 8; i++) {
         rcData[i] = uint16_t(1500 + pnt[i] * 500);
@@ -80,7 +81,7 @@ void Interface::set_rc_data_from_pointer(float* pnt) {
     bf::rxMspFrameReceive(&rcData[0], 8);
 }
 
-const char* Interface::getVersion() {
+const char* Interface::getVersion() { // yeah idk
     return FC_VERSION_STRING;
     return bf::shortGitRevision;
 }
@@ -110,81 +111,14 @@ void Interface::updateStateFromParams(glm::quat orientation,
 #error NON QUAT ORIENTATION SET??? bruh.
 #endif
 #else
-// apparently the fakeAccset can go here
+// apparently the fakeAccset can go here..?
 #endif
 }
-
-// std::vector<std::vector<int>> getOsdVec() {
-//     for (int y = 0; y < VIDEO_LINES; y++) {
-//         for (int x = 0; x < CHARS_PER_LINE; x++) {
-//             update.osd.value[y * CHARS_PER_LINE + x] = bf::osdScreen[y][x];
-//         }
-//     }
-// }
-// bool Simulator::step(float delta, bool crashed) {
-//     const auto deltaMicros = int(delta * 1e6);
-//     total_delta += deltaMicros;
-
-//     ////const auto last = hr_clock::now();
-
-//     dyad_update();
-
-// // auto dyad_time = hr_clock::now() - last;
-// // long long dyad_time_i = to_us(dyad_time);
-
-// // update rc at 100Hz, otherwise rx loss gets reported:
-//
-// set rc data separwelty
-// set_rc_data(state.rcData.value);
-
-// for (auto k = 0u; total_delta - DELTA >= 0; k++) {
-//     total_delta -= DELTA;
-//     micros_passed += DELTA;
-//     const float dt = DELTA / 1e6f;
-
-//     set_accelerometer(acceleration);
-
-//     if (sleep_timer > 0) {
-//         sleep_timer -= DELTA;
-//         sleep_timer = std::max(int64_t(0), sleep_timer);
-//     } else {
-//         bf::scheduler();
-//     }
-
-//     if (crashed) continue;
-
-// float motorsTorque = calculate_motors(dt, state, motorsState);
-
-// acceleration = calculate_physics(dt, state, motorsState,
-// motorsTorque);
-// }
-
-// if (micros_passed - last_osd_time > OSD_UPDATE_TIME) {
-//     last_osd_time = micros_passed;
-//     StateOsdUpdatePacket update;
-//     update.angularVelocity.value = state.angularVelocity.value;
-//     update.linearVelocity.value = state.linearVelocity.value;
-//     for (int y = 0; y < VIDEO_LINES; y++) {
-//         for (int x = 0; x < CHARS_PER_LINE; x++) {
-//             update.osd.value[y * CHARS_PER_LINE + x] =
-//             bf::osdScreen[y][x];
-//         }
-//     }
-//     send(send_socket, update);
-// } else {
-//     StateUpdatePacket update;
-//     update.angularVelocity.value = state.angularVelocity.value;
-//     update.linearVelocity.value = state.linearVelocity.value;
-//     send(send_socket, update);
-// }
-
-// return true;
-// }
 
 void Interface::debugArmFlags(unsigned long long int loops) {
     int flags = bf::getArmingDisableFlags();
     while (flags) {
-        const int bitpos = ffs(flags) - 1;
+        const int bitpos = bf::ffs(flags) - 1;
         flags &= ~(1 << bitpos);
         printf(" %s", bf::armingDisableFlagNames[bitpos]);
     }
@@ -203,7 +137,8 @@ void Interface::run_sched() {
 }
 
 void Interface::updateDyad() {
-    dyad_update();  // dyad is NOT necceeary
+    dyad_update(); 
+    // dyad is NOT necceeary if no TCP UART sock. leave for now...
 }
 
 std::array<int16_t, 4> Interface::get_motor_pwms() {
@@ -213,6 +148,7 @@ std::array<int16_t, 4> Interface::get_motor_pwms() {
 }
 
 void Interface::set_rc_data(std::array<float, 8> data) {
+    // ideally use shmem->rc instead....
     uint16_t rcData[8];
     for (int i = 0; i < 8; i++) {
         rcData[i] = uint16_t(1500 + data[i] * 500);
@@ -225,40 +161,13 @@ void Interface::set_rotation(const glm::mat3& rotation) {
       qrotation[3], -qrotation[2], qrotation[0], -qrotation[1]);
 }
 
-// void Simulator::set_baro(int pressure) {
-//     bf::fakeBaroSet(pkt->pressure, 2500);
-//     // temperature in 0.01 C = 25 deg
-// }
 
-// void Simulator::set_gps(const glm::vec3& position, const glm::vec3& velocity)
-// {
-//     const auto cosLon0 = 0.63141842418f;
-
-//     // set gps:
-//     static int64_t last_gps_millis = 0;
-//     int64_t millis = micros_passed / 1000;
-
-//     if (millis - last_gps_millis > 100) {
-//         bf::EnableState(bf::GPS_FIX);
-//         bf::gpsSol.numSat = 10;
-//         bf::gpsSol.llh.lat =
-//           int32_t(-position[2] * 100 / LATLON_TO_CM) + 508445910;
-//         bf::gpsSol.llh.lon =
-//           int32_t(position[0] * 100 / (cosLon0 * LATLON_TO_CM)) + 43551050;
-//         bf::gpsSol.llh.altCm = int32_t(position[1] * 100);
-//         bf::gpsSol.groundSpeed = uint16_t(glm::length(velocity) * 100);
-//         bf::GPS_update |= bf::GPS_MSP_UPDATE;
-
-//         last_gps_millis = millis;
-//     }
-// }
-
-//
-//
 Interface::~Interface() {
     dyad_shutdown();
+    //! other shutdown stuff. 
 }
-// BF Funcs
+
+// betaflight overrides
 extern "C" {
 void systemInit(void) {
     int ret;
@@ -271,19 +180,17 @@ void systemInit(void) {
 
 void systemReset(void) {
     printf("[INTERFACE:extern] [system] Reset!\n");
-
     exit(0);
 }
 
 void systemResetToBootloader(void) {
     printf("[INTERFACE:extern] [system] ResetToBootloader!\n");
-
     exit(1);
 }
 
 uint32_t micros(void) {
     // polled by scheduler!
-    return Interface::getInstance().micros_passed & 0xFFFFFFFF;
+    return Interface::getInstance().micros_passed & 0xFFFFFFFF; 
 }
 
 uint32_t millis(void) {
@@ -291,13 +198,13 @@ uint32_t millis(void) {
 }
 
 void microsleep(uint32_t usec) {
+    // _should_ work...?
     //    printf("[INTERFACE] uS:%i ", usec);
     // Simulator::getInstance().sleep_timer = usec;
     std::this_thread::sleep_for(std::chrono::microseconds(usec));
 }
 
 void delayMicroseconds(uint32_t usec) {
-    printf("uSleep;%i", usec);
     microsleep(usec);
 }
 
