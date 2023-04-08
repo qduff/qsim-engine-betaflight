@@ -10,7 +10,9 @@ Currently this is very bad code. Might work more on this in the summer.
 
 This is software that integrates a flight controller and a physics simulator to simulate a quadcopter. This however does not present a user interface, rather, it uses shared memory with a "frontend" process that will present the data to the user, as well as passing necessary parameters to this software. 
 
-I am currently working on a frontend (closed source), a screenshot of basic OSD functionality is displayed below:
+I am currently working on a frontend (closed source), a screenshot of the OSD functionality is displayed below:
+
+![Screenshot](pic.png "Screenshot")
 
 ## How do I use it?
 
