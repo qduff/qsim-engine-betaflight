@@ -112,6 +112,7 @@ int main(int argc, char **argv) {
         interface.set_rc_data(std::array<float, 8>{
           0., 1., 0, -1, 0, 0, 0, 0});  // roll pirch throttle yaw FOR MENU
         #endif
+        interface.set_rc_data_from_pointer(shmem->rc);
 
         interface.micros_passed =
           to_us(std::chrono::system_clock::now() - starttime);  

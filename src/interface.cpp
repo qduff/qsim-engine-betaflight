@@ -71,7 +71,7 @@ void Interface::setOsdLocation(uint8_t* pnt) {
 }
 
 void Interface::set_rc_data_from_pointer(float* pnt) {
-    printf("rcpnt %p\n", pnt);
+    // printf("rcpnt %p\n", pnt);
 
     uint16_t rcData[8];
     for (int i = 0; i < 8; i++) {
@@ -181,6 +181,8 @@ void systemInit(void) {
 void systemReset(void) {
     printf("[INTERFACE:extern] [system] Reset!\n");
     exit(0);
+    // execve(2) mayhaps? will likely be PITA on winapi
+    // restart from parent may not be ideal as context on exit needed (exit code?)
 }
 
 void systemResetToBootloader(void) {
