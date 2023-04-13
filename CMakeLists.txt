@@ -22,6 +22,11 @@ if (WIN32)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
 endif ()
 
+if(MINGW)
+  link_libraries(ws2_32)
+  add_compile_definitions(ffs=__builtin_ffs)
+endif()
+
 if (GEN_COVERAGE)
     message("Building with coverage")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")

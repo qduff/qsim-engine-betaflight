@@ -12,30 +12,22 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-// most of these are probably useless
+#include <thread>
+#ifdef __linux__
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>  // usleep
+#elif __MINGW32__
+#endif
 
 #include <chrono>
-#include <cstdint>
-#include <cstdlib>
-#include <ostream>
-#include <thread>
-#include <sys/mman.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h>
-
-
-#include <sys/mman.h>
-
 
 #include "interface.hpp"
-#include "memdef.h"
 #include "iostream"
+#include "memdef.h"
 #include "quaphy.h"
 
 #define USLEEP_DURATION 50
-
 
 template <typename R, typename P>
 auto to_ns(std::chrono::duration<R, P> t) {
@@ -52,36 +44,36 @@ auto to_ms(std::chrono::duration<R, P> t) {
     return std::chrono::duration_cast<std::chrono::milliseconds>(t).count();
 }
 
-memory_s *shmem; // moveme
+memory_s *shmem;  // moveme
 
 int main(int argc, char **argv) {
-
-    if (argc==1){
+    if (argc == 1) {
         puts("This process cannot be run standalone!");
         return -1;
 
     } else {
+#ifdef __linux__
         int fd = shm_open(argv[1], O_RDWR, S_IRUSR | S_IWUSR);
-        if (fd == -1)
-        {
+        if (fd == -1) {
             perror("shm_open_err!");
-            fprintf(stderr,"Cannot open %s\n", argv[1]);
+            fprintf(stderr, "Cannot open %s\n", argv[1]);
             return EXIT_FAILURE;
         }
-        shmem = (memory_s*)mmap(NULL, sizeof(memory_s), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-        if (shmem == MAP_FAILED)
-        {
+        shmem = (memory_s *)mmap(
+          NULL, sizeof(memory_s), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+        if (shmem == MAP_FAILED) {
             perror("ps_map_err!");
             return EXIT_FAILURE;
         }
+#elif __MINGW32__
+#endif
     }
     shmem->childVersion[0] = 0;
     shmem->childVersion[1] = 0;
     shmem->childVersion[2] = 3;
 
-
-    Interface& interface = Interface::getInstance();
-    Quaphy quaphy = Quaphy(); // unused rn
+    Interface &interface = Interface::getInstance();
+    Quaphy quaphy = Quaphy();  // unused rn
 
     if (!interface.init()) {
         puts("[KERNEL] Failed to initialize interface!");
@@ -99,46 +91,47 @@ int main(int argc, char **argv) {
     auto curtime = std::chrono::system_clock::now();
 
     while (run) {
-        #ifdef dyad
+#ifdef dyad
         interface.updateDyad();
-        #endif
+#endif
         interface.run_sched();
-        #define fakestate
-        #ifdef fakestate
+#define fakestate
+#ifdef fakestate
         interface.updateStateFromParams(
           glm::quat{0, 0, 0, 0}, glm::vec3{0, 0, 0}, glm::vec3{0, 0, 0});
-        #endif
-        #ifdef debugmenu
+#endif
+#ifdef debugmenu
         interface.set_rc_data(std::array<float, 8>{
           0., 1., 0, -1, 0, 0, 0, 0});  // roll pirch throttle yaw FOR MENU
-        #endif
+#endif
         interface.set_rc_data_from_pointer(shmem->rc);
 
         interface.micros_passed =
           to_us(std::chrono::system_clock::now() - starttime);
 
-        shmem->micros_passed=interface.micros_passed;
-        shmem->nanos_cycle=to_ns(std::chrono::system_clock::now() - curtime);
+        shmem->micros_passed = interface.micros_passed;
+        shmem->nanos_cycle = to_ns(std::chrono::system_clock::now() - curtime);
         curtime = std::chrono::system_clock::now();
 
         // debug stuff
-        shmem->position[0]= std::sin(interface.micros_passed*1000);
-        shmem->position[1]= std::cos(interface.micros_passed*1000);
-        shmem->position[2]= 0;
+        shmem->position[0] = std::sin(interface.micros_passed * 1000);
+        shmem->position[1] = std::cos(interface.micros_passed * 1000);
+        shmem->position[2] = 0;
 
-        shmem->rotation[0]= 0;
-        shmem->rotation[1]= 0;
-        shmem->rotation[2]= 0;
-
-
+        shmem->rotation[0] = 0;
+        shmem->rotation[1] = 0;
+        shmem->rotation[2] = 0;
 
         // interface.debugArmFlags(loops);
 
         // for (int i = 0; i < 8; ++i) {
-            // printf("axis %i :  %f\n", i, *(rcpnt + i));
+        // printf("axis %i :  %f\n", i, *(rcpnt + i));
         // }
 
-        usleep(USLEEP_DURATION); // do not eat cpu! potentially target rate instead since this thing can go FAST!
+        std::this_thread::sleep_for(std::chrono::microseconds(50));
+        // do not eat cpu! potentially target rate
+        // instead since this thing can go FAST!
+        // NB: not an ideal solution!
     }
     puts("Process quit (hmmmmmm)");
     return 0;
