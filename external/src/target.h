@@ -30,9 +30,7 @@
 
 #define TARGET_BOARD_IDENTIFIER "BFWRAP_VIRUTAL"
 
-#ifdef __MINGW32__
-#define ffs __builtin_ffs
-#endif
+
 
 // use simulatior's attitude directly
 // disable this if wants to test AHRS algorithm

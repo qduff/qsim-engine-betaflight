@@ -1,4 +1,4 @@
-#include "interface.h"
+#include "interface.hpp"
 
 #include <array>
 #include <chrono>
@@ -45,6 +45,8 @@ void EnableState(stateFlags_t mask) {
 }
 }
 
+
+
 #define USE_QUAT_ORIENTATION
 
 #define RAD2DEG (180.0 / M_PI)
@@ -52,8 +54,8 @@ void EnableState(stateFlags_t mask) {
 #define GYRO_SCALE (16.4)
 
 Interface& Interface::getInstance() {
-    static Interface interface;
-    return interface;
+    static Interface bf_interface;
+    return bf_interface;
 }
 
 bool Interface::init() {
@@ -118,7 +120,11 @@ void Interface::updateStateFromParams(glm::quat orientation,
 void Interface::debugArmFlags(unsigned long long int loops) {
     int flags = bf::getArmingDisableFlags();
     while (flags) {
+        #ifdef __MINGW32__
+        const int bitpos = __builtin_ffs(flags) - 1;
+        #else
         const int bitpos = bf::ffs(flags) - 1;
+        #endif
         flags &= ~(1 << bitpos);
         printf(" %s", bf::armingDisableFlagNames[bitpos]);
     }

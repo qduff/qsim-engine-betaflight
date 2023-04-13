@@ -30,8 +30,12 @@ struct memory_s {
     // RC data
     float rc[16];
 
+    // may be worth using glm data types idk, although this will do for now to ensure portability.
+    float position[3];
+    float rotation[3];
+
     // Initialize (only in host application!)
-    memory_s(): schemaVersion{0,2,1} , osd{0}, rc{0.0} {} 
+    memory_s(): schemaVersion{0,2,1} , osd{0}, rc{0.0} {}
 
 } ;
 

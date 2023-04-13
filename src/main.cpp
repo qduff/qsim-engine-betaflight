@@ -29,7 +29,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include <sys/mman.h>
 
 
-#include "interface.h"
+#include "interface.hpp"
 #include "memdef.h"
 #include "iostream"
 #include "quaphy.h"
@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
         puts("[KERNEL] Failed to initialize interface!");
         return EXIT_FAILURE;
     }
-  
+
     interface.setOsdLocation(shmem->osd);
 
     puts("[KERNEL] Successfully initialized interface!");
@@ -115,11 +115,22 @@ int main(int argc, char **argv) {
         interface.set_rc_data_from_pointer(shmem->rc);
 
         interface.micros_passed =
-          to_us(std::chrono::system_clock::now() - starttime);  
+          to_us(std::chrono::system_clock::now() - starttime);
 
         shmem->micros_passed=interface.micros_passed;
         shmem->nanos_cycle=to_ns(std::chrono::system_clock::now() - curtime);
         curtime = std::chrono::system_clock::now();
+
+        // debug stuff
+        shmem->position[0]= std::sin(interface.micros_passed*1000);
+        shmem->position[1]= std::cos(interface.micros_passed*1000);
+        shmem->position[2]= 0;
+
+        shmem->rotation[0]= 0;
+        shmem->rotation[1]= 0;
+        shmem->rotation[2]= 0;
+
+
 
         // interface.debugArmFlags(loops);
 
