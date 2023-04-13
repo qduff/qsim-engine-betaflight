@@ -25,6 +25,7 @@ endif ()
 if(MINGW)
   link_libraries(ws2_32)
   add_compile_definitions(ffs=__builtin_ffs)
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --static")
 endif()
 
 if (GEN_COVERAGE)
