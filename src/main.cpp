@@ -18,6 +18,11 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include <sys/mman.h>
 #include <unistd.h>  // usleep
 #elif __MINGW32__
+#include <conio.h>
+#include <stdio.h>
+#include <tchar.h>
+#include <windows.h>
+
 #endif
 
 #include <chrono>
@@ -44,13 +49,14 @@ auto to_ms(std::chrono::duration<R, P> t) {
     return std::chrono::duration_cast<std::chrono::milliseconds>(t).count();
 }
 
-memory_s *shmem;  // moveme
-
 int main(int argc, char **argv) {
+    memory_s *shmem = NULL;
+#ifdef EMPTY_ALLOC
+    shmem = (memory_s *)malloc(sizeof(memory_s));
+#else
     if (argc == 1) {
         puts("This process cannot be run standalone!");
         return -1;
-
     } else {
 #ifdef __linux__
         int fd = shm_open(argv[1], O_RDWR, S_IRUSR | S_IWUSR);
@@ -66,73 +72,92 @@ int main(int argc, char **argv) {
             return EXIT_FAILURE;
         }
 #elif __MINGW32__
+        HANDLE hMapFile;
+        hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, argv[1]);
+        if (hMapFile == NULL) {
+            printf("Could not open file mapping object (%d).\n",
+                   GetLastError());
+            return 1;
+        }
+        shmem = (memory_s *)MapViewOfFile(
+          hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(memory_s));
+        if (shmem == NULL) {
+            printf("Could not map view of file (%d).\n", GetLastError());
+            CloseHandle(hMapFile);
+            return 1;
+        }
+        puts("Succeeded");
+        printf("%d",sizeof(shmem));
+#else
+#error Unsupported platform!
 #endif
-    }
-    shmem->childVersion[0] = 0;
-    shmem->childVersion[1] = 0;
-    shmem->childVersion[2] = 3;
+#endif
+}
+shmem->childVersion[0] = 0;
+shmem->childVersion[1] = 0;
+shmem->childVersion[2] = 3;
 
-    Interface &interface = Interface::getInstance();
-    Quaphy quaphy = Quaphy();  // unused rn
+Interface &bf_interface = Interface::getInstance();
+Quaphy quaphy = Quaphy();  // unused rn
 
-    if (!interface.init()) {
-        puts("[KERNEL] Failed to initialize interface!");
-        return EXIT_FAILURE;
-    }
+if (!bf_interface.init()) {
+    puts("[KERNEL] Failed to initialize bf_interface!");
+    return EXIT_FAILURE;
+}
 
-    interface.setOsdLocation(shmem->osd);
+bf_interface.setOsdLocation(shmem->osd);
 
-    puts("[KERNEL] Successfully initialized interface!");
-    std::cout << "[KERNEL] quaphy ver: " << quaphy.ver << std::endl;
-    std::cout << "[KERNEL] bf ver: " << interface.getVersion() << std::endl;
+puts("[KERNEL] Successfully initialized bf_interface!");
+std::cout << "[KERNEL] quaphy ver: " << quaphy.ver << std::endl;
+std::cout << "[KERNEL] bf ver: " << bf_interface.getVersion() << std::endl;
 
-    bool run = true;
-    auto starttime = std::chrono::system_clock::now();
-    auto curtime = std::chrono::system_clock::now();
+bool run = true;
+auto starttime = std::chrono::system_clock::now();
+auto curtime = std::chrono::system_clock::now();
 
-    while (run) {
+while (run) {
 #ifdef dyad
-        interface.updateDyad();
+    bf_interface.updateDyad();
 #endif
-        interface.run_sched();
+    bf_interface.run_sched();
 #define fakestate
 #ifdef fakestate
-        interface.updateStateFromParams(
-          glm::quat{0, 0, 0, 0}, glm::vec3{0, 0, 0}, glm::vec3{0, 0, 0});
+    bf_interface.updateStateFromParams(
+      glm::quat{0, 0, 0, 0}, glm::vec3{0, 0, 0}, glm::vec3{0, 0, 0});
 #endif
 #ifdef debugmenu
-        interface.set_rc_data(std::array<float, 8>{
-          0., 1., 0, -1, 0, 0, 0, 0});  // roll pirch throttle yaw FOR MENU
+    bf_interface.set_rc_data(std::array<float, 8>{
+      0., 1., 0, -1, 0, 0, 0, 0});  // roll pirch throttle yaw FOR MENU
 #endif
-        interface.set_rc_data_from_pointer(shmem->rc);
+    bf_interface.set_rc_data_from_pointer(shmem->rc);
 
-        interface.micros_passed =
-          to_us(std::chrono::system_clock::now() - starttime);
+    bf_interface.micros_passed =
+      to_us(std::chrono::system_clock::now() - starttime);
 
-        shmem->micros_passed = interface.micros_passed;
-        shmem->nanos_cycle = to_ns(std::chrono::system_clock::now() - curtime);
-        curtime = std::chrono::system_clock::now();
+    shmem->micros_passed = bf_interface.micros_passed;
+    shmem->nanos_cycle = to_ns(std::chrono::system_clock::now() - curtime);
+    curtime = std::chrono::system_clock::now();
 
-        // debug stuff
-        shmem->position[0] = std::sin(interface.micros_passed * 1000);
-        shmem->position[1] = std::cos(interface.micros_passed * 1000);
-        shmem->position[2] = 0;
+    // debug stuff
+    shmem->position[0] = std::sin(bf_interface.micros_passed * 1000);
+    shmem->position[1] = std::cos(bf_interface.micros_passed * 1000);
+    shmem->position[2] = 0;
 
-        shmem->rotation[0] = 0;
-        shmem->rotation[1] = 0;
-        shmem->rotation[2] = 0;
+    shmem->rotation[0] = 0;
+    shmem->rotation[1] = 0;
+    shmem->rotation[2] = 0;
 
-        // interface.debugArmFlags(loops);
+    // bf_interface.debugArmFlags(loops);
 
-        // for (int i = 0; i < 8; ++i) {
-        // printf("axis %i :  %f\n", i, *(rcpnt + i));
-        // }
+    // for (int i = 0; i < 8; ++i) {
+    // printf("axis %i :  %f\n", i, *(rcpnt + i));
+    // }
 
-        std::this_thread::sleep_for(std::chrono::microseconds(50));
-        // do not eat cpu! potentially target rate
-        // instead since this thing can go FAST!
-        // NB: not an ideal solution!
-    }
-    puts("Process quit (hmmmmmm)");
-    return 0;
+    std::this_thread::sleep_for(std::chrono::microseconds(50));
+    // do not eat cpu! potentially target rate
+    // instead since this thing can go FAST!
+    // NB: not an ideal solution!
+}
+puts("Process quit (hmmmmmm)");
+return 0;
 }
