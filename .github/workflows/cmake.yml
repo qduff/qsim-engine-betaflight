@@ -12,26 +12,17 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
-    strategy:
-      matrix:
-        platform: [cmake, mingw64-cmake]
-    
+        
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up MinGW
-      if: ${{matrix.platform}} == 'mingw64-cmake'
-      uses: msys2/setup-msys2@v2
-      with:
-        msystem: mingw64
-        install: >-
-          mingw-w64-${{matrix.env}}-toolchain
-          mingw-w64-${{matrix.env}}-gcc
-          mingw-w64-${{matrix.env}}-cmake
-          
+    - name: Install Packages
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y build-essential cmake 
+
     - name: Configure CMake
-      run: ${{matrix.platform}} -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build
-      run: ${{matrix.platform}} --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
