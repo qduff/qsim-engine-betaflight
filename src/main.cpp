@@ -86,8 +86,6 @@ int main(int argc, char **argv) {
             CloseHandle(hMapFile);
             return 1;
         }
-        puts("Succeeded");
-        printf("%d",sizeof(shmem));
 #else
 #error Unsupported platform!
 #endif
@@ -139,8 +137,8 @@ while (run) {
     curtime = std::chrono::system_clock::now();
 
     // debug stuff
-    shmem->position[0] = std::sin(bf_interface.micros_passed * 1000);
-    shmem->position[1] = std::cos(bf_interface.micros_passed * 1000);
+    shmem->position[0] = std::sin(bf_interface.micros_passed / 1000000.0f);
+    shmem->position[1] = std::cos(bf_interface.micros_passed / 1000000.0f);
     shmem->position[2] = 0;
 
     shmem->rotation[0] = 0;
