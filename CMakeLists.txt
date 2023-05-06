@@ -22,10 +22,11 @@ if (WIN32)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
 endif ()
 
-if(MINGW)
+if(MINGW OR MSYS)
   link_libraries(ws2_32)
-  add_compile_definitions(ffs=__builtin_ffs)
+#   add_compile_definitions(ffs=__builtin_ffs) // only linux for windows..?
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --static")
+
 endif()
 
 if (GEN_COVERAGE)
@@ -33,6 +34,9 @@ if (GEN_COVERAGE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
 endif ()
+
+find_package(glm REQUIRED)
+include_directories(${GLM_INCLUDE_DIRS})
 
 
 # Get betaflight sources:
@@ -62,11 +66,12 @@ target_include_directories(bfsitl PUBLIC external/betaflight/src/main)
 add_subdirectory(lib/quaphy)
 
 
+
 add_executable(qsim_engine src/main.cpp $<TARGET_OBJECTS:bfsitl>) # ${SOURCE_FILES}) #${BETAFLIGHT_SOURCES})
-target_link_libraries(qsim_engine PRIVATE quaphy)
-
-
+target_link_libraries(qsim_engine PUBLIC quaphy)
 target_link_libraries(qsim_engine PUBLIC bfsitl)
+
+
 #
 
 #if (WIN32)

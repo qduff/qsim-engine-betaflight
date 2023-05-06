@@ -1,11 +1,10 @@
-Currently this is very bad code. Might work more on this in the summer.
-
-***
-
 > **Warning**
-> API is currently in flux so I would caution against using this in its current state!
+> WIP
 
-
+## How to compile for:
+* Linux: Install gcc/clang, cmake (more?) from your package manager, should all work well.
+* Windows: Install msys2, and install the required packages (gcc, cmake, make, glm, perhaps more?)
+* Windows (from Linux): Use mingw-w64, sorta the same as above, also works well (this might currently not work)
 ## What is this?
 
 This is software that integrates a flight controller and a physics simulator to simulate a quadcopter. This however does not present a user interface, rather, it uses shared memory with a "frontend" process that will present the data to the user, as well as passing necessary parameters to this software. 

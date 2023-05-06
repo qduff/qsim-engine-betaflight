@@ -17,12 +17,11 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>  // usleep
-#elif __MINGW32__
-#include <conio.h>
+#elif defined __MINGW32__ || defined __MSYS__
+// #include <conio.h>
 #include <stdio.h>
 #include <tchar.h>
 #include <windows.h>
-
 #endif
 
 #include <chrono>
@@ -71,7 +70,7 @@ int main(int argc, char **argv) {
             perror("ps_map_err!");
             return EXIT_FAILURE;
         }
-#elif __MINGW32__
+#elif defined __MINGW32__ || defined __MSYS__
         HANDLE hMapFile;
         hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, argv[1]);
         if (hMapFile == NULL) {
