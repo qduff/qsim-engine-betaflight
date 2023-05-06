@@ -96,7 +96,7 @@
 #undef USE_TELEMETRY_LTM
 #undef USE_ADC
 #undef USE_VCP
-#undef USE_OSD  // TODO PERHAPS REENABLE LATER??
+// #undef USE_OSD  // TODO PERHAPS REENABLE LATER??
 #undef USE_PPM
 #undef USE_PWM
 #undef USE_SERIAL_RX

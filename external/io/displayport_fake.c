@@ -40,7 +40,6 @@ static int clearScreen(displayPort_t *displayPort) {
 static int drawScreen(displayPort_t *displayPort) {
     UNUSED(displayPort);
     memcpy(osdPntr, osdBackBuffer, CHARS_PER_LINE * VIDEO_LINES);
-
     return 0;
 }
 

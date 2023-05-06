@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.3)
-project(sim_kernel)
+project(qsim_engine)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -45,6 +45,8 @@ target_compile_features(bfsitl PUBLIC cxx_std_17)
 
 target_compile_definitions(bfsitl PUBLIC "__TARGET__=\"virtual_device\"")
 target_compile_definitions(bfsitl PUBLIC "__REVISION__=\"unknown-0.0.0\"")
+target_compile_definitions(bfsitl PUBLIC "_GNU_SOURCE")
+
 
 target_compile_definitions(bfsitl PUBLIC SIMULATOR_BUILD)
 target_compile_definitions(bfsitl PUBLIC "HSE_VALUE=8000000")
@@ -60,14 +62,14 @@ target_include_directories(bfsitl PUBLIC external/betaflight/src/main)
 add_subdirectory(lib/quaphy)
 
 
-add_executable(sim_kernel src/main.cpp $<TARGET_OBJECTS:bfsitl>) # ${SOURCE_FILES}) #${BETAFLIGHT_SOURCES})
-target_link_libraries(sim_kernel PRIVATE quaphy)
+add_executable(qsim_engine src/main.cpp $<TARGET_OBJECTS:bfsitl>) # ${SOURCE_FILES}) #${BETAFLIGHT_SOURCES})
+target_link_libraries(qsim_engine PRIVATE quaphy)
 
 
-target_link_libraries(sim_kernel PUBLIC bfsitl)
+target_link_libraries(qsim_engine PUBLIC bfsitl)
 #
 
 #if (WIN32)
-#  target_link_libraries(sim_kernel PUBLIC wsock32 ws2_32)
+#  target_link_libraries(qsim_engine PUBLIC wsock32 ws2_32)
 #endif (WIN32)
 

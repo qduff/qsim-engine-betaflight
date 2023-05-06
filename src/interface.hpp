@@ -29,7 +29,7 @@ class Interface {
     void updateStateFromParams(glm::quat orientation,
                                glm::vec3 ang_velocity,
                                glm::vec3 lin_acceleration);
-    void debugArmFlags(unsigned long long int loops);
+    void debugArmFlags();
     std::array<int16_t, 4> get_motor_pwms();
     ~Interface();
 

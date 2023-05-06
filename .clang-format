@@ -8,3 +8,4 @@ AlignAfterOpenBracket: Align
 AllowShortBlocksOnASingleLine: false
 AllowShortFunctionsOnASingleLine: false
 AllowShortCaseLabelsOnASingleLine: false
+ColumnLimit: 100

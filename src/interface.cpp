@@ -117,7 +117,7 @@ void Interface::updateStateFromParams(glm::quat orientation,
 #endif
 }
 
-void Interface::debugArmFlags(unsigned long long int loops) {
+void Interface::debugArmFlags() {
     int flags = bf::getArmingDisableFlags();
     while (flags) {
         #ifdef __MINGW32__

@@ -106,7 +106,7 @@ if (!bf_interface.init()) {
 bf_interface.setOsdLocation(shmem->osd);
 
 puts("[KERNEL] Successfully initialized bf_interface!");
-std::cout << "[KERNEL] quaphy ver: " << quaphy.ver << std::endl;
+// std::cout << "[KERNEL] quaphy ver: " << quaphy.ver << std::endl;
 std::cout << "[KERNEL] bf ver: " << bf_interface.getVersion() << std::endl;
 
 bool run = true;
@@ -145,7 +145,11 @@ while (run) {
     shmem->rotation[1] = 0;
     shmem->rotation[2] = 0;
 
-    // bf_interface.debugArmFlags(loops);
+    auto pwms = bf_interface.get_motor_pwms();
+    for (int i = 0; i<4; i++){
+        // printf("motor %d, %u\n", i, pwms.at(i));
+    }
+    // bf_interface.debugArmFlags();
 
     // for (int i = 0; i < 8; ++i) {
     // printf("axis %i :  %f\n", i, *(rcpnt + i));
