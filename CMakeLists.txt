@@ -63,12 +63,12 @@ target_include_directories(bfsitl PUBLIC external/betaflight/lib/main/dyad)
 target_include_directories(bfsitl PUBLIC external/betaflight/src/main)
 
 
-add_subdirectory(lib/quaphy)
+add_subdirectory(lib/qsim-physics)
 
 
 
 add_executable(qsim_engine src/main.cpp $<TARGET_OBJECTS:bfsitl>) # ${SOURCE_FILES}) #${BETAFLIGHT_SOURCES})
-target_link_libraries(qsim_engine PUBLIC quaphy)
+target_link_libraries(qsim_engine PUBLIC qsim-physics)
 target_link_libraries(qsim_engine PUBLIC bfsitl)
 
 

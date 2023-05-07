@@ -29,7 +29,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include "interface.hpp"
 #include "iostream"
 #include "memdef.h"
-#include "quaphy.h"
+#include "../lib/qsim-physics/physics.h"
 
 #define USLEEP_DURATION 50
 
@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
 #ifdef EMPTY_ALLOC
     shmem = (memory_s *)malloc(sizeof(memory_s));
 #else
-    if (argc == 1) {
+    if (argc <= 1) {
         puts("This process cannot be run standalone!");
         return -1;
     } else {
@@ -95,7 +95,7 @@ shmem->childVersion[1] = 0;
 shmem->childVersion[2] = 3;
 
 Interface &bf_interface = Interface::getInstance();
-Quaphy quaphy = Quaphy();  // unused rn
+Physics quaphy = Physics();  // unused rn
 
 if (!bf_interface.init()) {
     puts("[KERNEL] Failed to initialize bf_interface!");
@@ -153,8 +153,9 @@ while (run) {
     // for (int i = 0; i < 8; ++i) {
     // printf("axis %i :  %f\n", i, *(rcpnt + i));
     // }
-
+    #ifndef __CYGWIN__
     std::this_thread::sleep_for(std::chrono::microseconds(50));
+    #endif
     // do not eat cpu! potentially target rate
     // instead since this thing can go FAST!
     // NB: not an ideal solution!
