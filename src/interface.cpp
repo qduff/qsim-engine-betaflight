@@ -120,7 +120,7 @@ void Interface::updateStateFromParams(glm::quat orientation,
 void Interface::debugArmFlags() {
     int flags = bf::getArmingDisableFlags();
     while (flags) {
-        #ifdef __MINGW32__
+        #if defined _WIN32 || defined __CYGWIN__
         const int bitpos = __builtin_ffs(flags) - 1;
         #else
         const int bitpos = bf::ffs(flags) - 1;

@@ -17,8 +17,10 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>  // usleep
-#elif defined __MINGW32__ || defined __MSYS__
+#elif defined _WIN32 || defined __CYGWIN__
+#define  _WIN32_WINNT 0x0601
 // #include <conio.h>
+// #include <concrt.h>
 #include <stdio.h>
 #include <tchar.h>
 #include <windows.h>
@@ -27,11 +29,23 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #include <chrono>
 
 #include "interface.hpp"
-#include "iostream"
+#include <iostream>
 #include "memdef.h"
 #include "../lib/qsim-physics/physics.h"
+#include <glm/glm.hpp>
+#include <glm/vec3.hpp>  // glm::vec3
+
 
 #define USLEEP_DURATION 50
+
+void MainLoop();
+
+void __stdcall
+TimerCallback(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
+{
+    printf("Hello World\n");
+}
+
 
 template <typename R, typename P>
 auto to_ns(std::chrono::duration<R, P> t) {
@@ -47,6 +61,9 @@ template <typename R, typename P>
 auto to_ms(std::chrono::duration<R, P> t) {
     return std::chrono::duration_cast<std::chrono::milliseconds>(t).count();
 }
+
+
+
 
 int main(int argc, char **argv) {
     memory_s *shmem = NULL;
@@ -70,7 +87,7 @@ int main(int argc, char **argv) {
             perror("ps_map_err!");
             return EXIT_FAILURE;
         }
-#elif defined __MINGW32__ || defined __MSYS__
+#elif defined _WIN32 || defined __CYGWIN__
         HANDLE hMapFile;
         hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, argv[1]);
         if (hMapFile == NULL) {
@@ -112,7 +129,33 @@ bool run = true;
 auto starttime = std::chrono::system_clock::now();
 auto curtime = std::chrono::system_clock::now();
 
-while (run) {
+
+#if defined _WIN32 || defined __CYGWIN__
+    HANDLE ptrTimerHandle;
+    CreateTimerQueueTimer(&ptrTimerHandle, NULL, TimerCallback, NULL, 1, 1, WT_EXECUTEDEFAULT );
+
+    getchar();
+
+    DeleteTimerQueueTimer(NULL, ptrTimerHandle, NULL);
+    return 0;
+
+#elif defined __linux__
+    std::this_thread::sleep_for(std::chrono::microseconds(50));
+#endif
+    // do not eat cpu! potentially target rate
+    // instead since this thing can go FAST!
+    // NB: not an ideal solution!
+
+    puts("Process quit (hmmmmmm)");
+return 0;
+
+}
+
+
+
+
+
+void MainLoop(Interface &bf_interface, memory_s *shmem, std::chrono::time_point<std::chrono::system_clock>  starttime, std::chrono::time_point<std::chrono::system_clock>  curtime){
 #ifdef dyad
     bf_interface.updateDyad();
 #endif
@@ -136,8 +179,8 @@ while (run) {
     curtime = std::chrono::system_clock::now();
 
     // debug stuff
-    shmem->position[0] = std::sin(bf_interface.micros_passed / 1000000.0f);
-    shmem->position[1] = std::cos(bf_interface.micros_passed / 1000000.0f);
+    shmem->position[0] = sin(bf_interface.micros_passed / 1000000.0f);
+    shmem->position[1] = cos(bf_interface.micros_passed / 1000000.0f);
     shmem->position[2] = 0;
 
     shmem->rotation[0] = 0;
@@ -153,13 +196,4 @@ while (run) {
     // for (int i = 0; i < 8; ++i) {
     // printf("axis %i :  %f\n", i, *(rcpnt + i));
     // }
-    #ifndef __CYGWIN__
-    std::this_thread::sleep_for(std::chrono::microseconds(50));
-    #endif
-    // do not eat cpu! potentially target rate
-    // instead since this thing can go FAST!
-    // NB: not an ideal solution!
-}
-puts("Process quit (hmmmmmm)");
-return 0;
 }
